@@ -17,7 +17,7 @@ class TestXueQiu:
 
     @pytest.mark.parametrize('search_key, search_result, price', [["alibaba", "BABA", 100]])
     def test_search1(self, search_key, search_result, price):
-        # TODO 改脚本有一个BUG,即未应对弹出来的登录页面,后续增加特殊场景处理临时处理的功能
+        # TODO 该脚本有一个BUG,即未应对弹出来的登录页面,后续增加特殊场景处理临时处理的功能
         """
         打开【雪球】应用首页
         点击搜索框，进入搜索页面
