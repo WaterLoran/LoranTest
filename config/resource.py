@@ -1,8 +1,8 @@
+# 区别于被测环境,这个文件主要记录测试工具的信息,即被用来测试被测系统的测试工具,例如selenium所用到的webdriver等
+
 class Environment(object):
     def __init__(self):
-        self._base_url = "http://litemall.hogwarts.ceshiren.com/"
-        self._base_mysql = "8.8.8.8"
-        self.esxi_litemall = "http://192.168.0.102:6255/#/"
+        driver_path = r"E:\代码空间\auto_test_framework\drivers\chromedriver.exe"
 
     @property
     def base_url(self):
