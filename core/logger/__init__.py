@@ -3,7 +3,7 @@ import logging
 import logging.handlers
 import os
 import time
-from config.frame.basic import LOG_PATH
+from config.path import LOG_PATH
 
 
 class LoggerManager:

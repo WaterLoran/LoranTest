@@ -40,6 +40,7 @@ def rmv_goods(id="", **kwargs):
     return req_method, url, body_data
 
 
+@Api.json
 def lst_goods(name="", **kwargs):
     req_method = "GET"
     url = "admin/goods/list"
@@ -50,6 +51,7 @@ def lst_goods(name="", **kwargs):
     }
     return req_method, url, body_data
 
+@Api.json
 def dtl_goods(id="", **kwargs):
     req_method = "GET"
     url = "admin/goods/detail"

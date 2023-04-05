@@ -11,10 +11,10 @@ class TestWithCaseInfo(object):
         pass
 
     def test_with_case_info(self):
-        self.logger.info("这里是一条属于test_with_case_info函数的日志")
-        litemall = LitemallWeb()
+        self.logger.info("这里是一条属于test_with_case_infO函数的日志")
+        self.litemall = LitemallWeb()
         time.sleep(3)
-        main_page = litemall.start().goto_main_page()
+        main_page = self.litemall.start().goto_main_page()
         time.sleep(3)
         muji_manufacturer = main_page.goto_muji_manufacturer()
         time.sleep(3)
@@ -26,4 +26,5 @@ class TestWithCaseInfo(object):
 
     def teardown(self):
         self.logger.info("这里是test_with_case_info用例的teardown部分的日志")
+        self.litemall.quit()
         pass
