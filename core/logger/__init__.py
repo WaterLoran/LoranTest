@@ -3,7 +3,7 @@ import logging
 import logging.handlers
 import os
 import time
-from config.path import LOG_PATH
+from config.path import LOG_PATH, BASE_PATH, CONFIG_PATH
 
 
 class LoggerManager:
@@ -39,6 +39,9 @@ class LoggerManager:
             t_folder = os.path.join(t_folder, new_folder_list[i])
 
         log_file_path = os.path.join(t_folder, log_file_name)
+        print("CONFIG_PATH", CONFIG_PATH)
+        print("BASE_PATH", BASE_PATH)
+        print("LOG_PATH", LOG_PATH)
         log_file_path = os.path.join(LOG_PATH, log_file_path)
 
         print("get_log_file_name::所要输出日志文件的路径=>log_file_path", log_file_path)
@@ -67,8 +70,9 @@ class LoggerManager:
         thread: 表示所属的线程
         """
 
-        print("filename", case_file_path)
+        print("case_file_path", case_file_path)
         filename = self.get_log_file_name(case_file_path)
+        print("filename", filename)
 
         log_format = kwargs.get("format", None)
         if log_format is None:

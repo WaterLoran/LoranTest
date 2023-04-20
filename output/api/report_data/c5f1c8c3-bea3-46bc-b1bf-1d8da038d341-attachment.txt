@@ -1,3 +1,0 @@
-INFO     main:test_logger.py:11 这是TestLogger测试用例的setup部分
-INFO     main:test_logger.py:15 这是TestLogger测试用例的过程部分
-INFO     main:func_for_logger.py:7 这里是一条属于for_logger_func_1函数的日志
