@@ -2,7 +2,7 @@ class Environment(object):
     def __init__(self):
         self._base_url = "http://litemall.hogwarts.ceshiren.com/"
         self._base_mysql = "8.8.8.8"
-        self.esxi_litemall = "http://192.168.0.102:6255/#/"
+        self.esxi_litemall = "http://192.168.0.103:6255/#/"
 
     @property
     def base_url(self):

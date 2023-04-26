@@ -1,10 +1,7 @@
-from selenium.webdriver import Firefox, Chrome, FirefoxProfile, ChromeOptions
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from functools import wraps
+import os
 import time
 from core.logger.logger_interface import get_logger
+from core.logger import get_ui_screecshot_directory
 
 
 class WebBasePage:
@@ -12,7 +9,6 @@ class WebBasePage:
         self.web_driver = web_driver
         self.windows = dict()
         self.logger = get_logger()
-
 
     def nav(self, url):
         if self.web_driver:
@@ -49,6 +45,7 @@ class WebBasePage:
         self.web_driver.close()
 
     def find(self, by, locator):
+        self.screenshot()
         return self.web_driver.find_element(by, locator)
 
     def find_and_click(self, by, locator):
@@ -60,9 +57,14 @@ class WebBasePage:
     def find_and_gettext(self, by, locator):
         return self.find(by, locator).text
 
-    def screenshot(self, filename):
-        self.web_driver.save_screenshot(filename)
-        # TODO 这里的截图需要归档到日志目录下
+    def screenshot(self):
+        directory = get_ui_screecshot_directory()
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        time_suffix_jpg = str(int(time.time())) + ".jpg"
+        jpg_path = os.path.join(directory, time_suffix_jpg)
+        self.web_driver.save_screenshot(jpg_path)
+
 
     def get_time(self):
         t = time.localtime(time.time())
