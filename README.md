@@ -30,3 +30,7 @@
 
 1. 发送钉钉通知到通知群
 
+## 学习示例
+
+1. 提供mysql联表查询示例
+   脚本在case->test_mysql->query_mysql目录下
