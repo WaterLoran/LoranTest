@@ -1,6 +1,7 @@
 # -*- coding:utf8 -*-
-from core.logger import logger_init, logger_end
-from func_for_logger import for_logger_func_1
+from core.init import *
+from core.loran_hook.logger import logger_init, logger_end
+from .func_for_logger import for_logger_func_1
 
 
 class TestLogger(object):

@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: loran-hook
+Version: 1.0
+Summary: UTF-8
+Home-page: https://github.com/xxx/pytest-changecode
+Author: water
+Author-email: 1696746432@qq.com
+License: proprietary
+Keywords: pytest,py.test,loran_hook
+Classifier: Framework :: Pytest
+Classifier: Programming Language :: Python
+Classifier: Topic :: Software Development :: Testing
+Classifier: Programming Language :: Python :: 3.8
+
+对pytest的钩子函数进行封装, 将logger注册和解除注册的操作嵌入到框架中

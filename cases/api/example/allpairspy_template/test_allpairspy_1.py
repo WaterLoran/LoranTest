@@ -1,5 +1,7 @@
 import pytest
 from allpairspy import AllPairs
+import os
+import threading
 
 def function_to_be_tested(sex, grade, age):
     """
@@ -37,14 +39,13 @@ class TestParameterized(object):
 
     @pytest.mark.parametrize(["sex", "grade", "age"], [value_list for value_list in AllPairs(parameters)])
     def test_normal_scenes(self, sex, grade, age):
-        import os
-        import threading
         print("当前进程：", os.getpid(), " 父进程：", os.getppid())
         t = threading.currentThread()
         print('Thread id : %d' % t.ident)
         assert function_to_be_tested(sex, grade, age)
 
     def test_print_pairs(self):
+        print("当前进程：", os.getpid(), " 父进程：", os.getppid())
         print("\nPAIRWISE:")
         for i, pairs in enumerate(AllPairs(self.parameters, filter_func=is_valid_combination)):
             print("用例编号{:2d}: {}".format(i, pairs))

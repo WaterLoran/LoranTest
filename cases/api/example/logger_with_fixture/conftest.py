@@ -1,5 +1,5 @@
 import pytest
-from core.logger import logger_init, logger_end
+from core.loran_hook.logger import logger_init, logger_end
 
 
 @pytest.fixture(scope="class", autouse=True)

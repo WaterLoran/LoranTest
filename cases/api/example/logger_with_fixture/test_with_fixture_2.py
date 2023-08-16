@@ -1,5 +1,5 @@
 # -*- coding:utf8 -*-
-from core.logger import get_logger
+from core.loran_hook.logger import get_logger
 
 
 class TestWithCaseInfo2(object):

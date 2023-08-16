@@ -1,0 +1,2 @@
+[pytest11]
+loran_hook = loran_hook

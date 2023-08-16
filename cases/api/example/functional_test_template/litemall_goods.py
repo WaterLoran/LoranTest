@@ -3,20 +3,31 @@ from core.logger import logger_init
 
 
 def test_goods_lifestyle():
-    logger = logger_init(__file__)
-    logger.info("这是TestLogger测试用例的setup部分")
+    # logger = logger_init(__file__)
+    # logger.info("这是TestLogger测试用例的setup部分")
+
+    reg = register({
+        my_id: None
+    })
 
     add_goods(
         goodsSn="jincong998",
         name="jincong998_car"
     )
-    my_id = lst_goods(
+
+    lst_goods(
         name="jincong998_car",
-        fetch=[["my_id", "$..data..list..id"]]
+        fetch=[[reg, "my_id", "$..data..list..id"]],
+        check=["$.data.id", "eq", "888"]
     )
-    print("my_id", my_id)
+    # print("my_id")
+
     rmv_goods(
-        id=my_id,
+        id=reg.my_id,
     )
 
-    print("my_id", my_id)
+
+
+# 添加商品
+# 查看商品
+# 删除商品

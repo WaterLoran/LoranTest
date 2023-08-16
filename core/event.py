@@ -1,4 +1,4 @@
-from core.logger.logger_interface import logger
+from core.loran_hook.logger.logger_interface import logger
 from functools import wraps
 from threading import Thread
 import time
@@ -41,15 +41,18 @@ class Event:
                         success_flag = True
                     except Exception as err:
                         logger.info("正在调用Event.force,抛出异常,err为{}".format(err))
+                        time.sleep(1)
                     if success_flag:
                         break
+                if success_flag is False:
+                    assert False
             return wrapper
         return decorate
 
     @classmethod
     def force(cls, times):
         """
-        被该装饰器装饰的函数,将会在未抛出异常的情况下,串行循环执行times次
+        被该装饰器装饰的函数,不管是否抛出异常,都串行循环执行times次
         :param times: 所要执行的事情的次数
         :return:
         """
