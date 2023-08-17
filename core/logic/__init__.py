@@ -142,11 +142,11 @@ class Api:
 
         # 使用请求的基类去做实际请求
         if api_type == "json":
-            rsp_data = BaseApi(role="admin").send(method=req_method, url=req_url, json=req_body)
+            rsp_data = BaseApi().send(method=req_method, url=req_url, json=req_body)
         elif api_type == "urlencoded":
-            rsp_data = BaseApi(role="admin").send(method=req_method, url=req_url, params=req_params)
+            rsp_data = BaseApi().send(method=req_method, url=req_url, params=req_params)
         elif api_type == "form_data":
-            rsp_data = BaseApi(role="admin").send(method=req_method, url=req_url, files=files, data=data)
+            rsp_data = BaseApi().send(method=req_method, url=req_url, files=files, data=data)
         else:
             pass
 

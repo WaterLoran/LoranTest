@@ -26,71 +26,67 @@ class SingletonMeta(type):
         return cls._instances[cls]
 
 
-class Cookie(metaclass=SingletonMeta):
+class Token(metaclass=SingletonMeta):
     def __init__(self):
         # 用于记录logger的配置信息
-        self._cookie = None
+        self._token = None
 
     @property
-    def cookie(self):
-        return self._cookie
+    def token(self):
+        return self._token
 
-    @cookie.setter
-    def cookie(self, value):
-        self._cookie = value
+    @token.setter
+    def token(self, value):
+        self._token = value
 
 
 class BaseApi:
-    def __init__(self, role=None):
+    def __init__(self):
         env = Environment()
         self.base_url = env.base_url
         self.username = env.username
         self.password = env.password
         self.token = None
         self.cookie = None
-        self.role = role
 
-    def _get_token(self, role=None):
-        if role != "admin" and role != "client":
-            raise ValueError
-        url = {
-            # "admin": "viewer-service/auth/login",
-            "admin": "api/authentication/login",
-        }
-        data = {
-            "admin": {"username": self.username,
-                      "password": self.password},
-        }
-        req_token = {
-            "admin": "Auth-Token",
-        }
+    def get_token(self):
+        self._get_token()
 
-        response = requests.request("post", self.base_url + url[role], json=data[role])
-        # 此处为request所发请求，response中还另外携带connecttion，cookies，headers，request等信息
-        rsp = response.content
-        try:
-            self.token = {req_token[role]: json.loads(rsp)["data"]["token"]}
-            self.cookie = {"Cookie": "Auth-Token=" + json.loads(rsp)["data"]["token"]}
-            self.token_content = json.loads(rsp)["data"]["token"]
-        except Exception as err:
-            raise RuoyiError("get_token_failed")
+    def _get_token(self):
+        # 获取验证码的uuid
+        url = "dev-api/captchaImage"
+        rsp = requests.request("get", self.base_url + url)
+        rsp_json = rsp.json()
+        uuid = rsp_json["uuid"]
+
+        url = "dev-api/login"
+        login_json = {
+            "username": self.username,
+            "password": self.password,
+            "code": "888",
+            "uuid": uuid
+        }
+        rsp = requests.request("post", self.base_url + url, json=login_json)
+        rsp_json = rsp.json()
+        print("rsp_json", rsp_json)
+        self.token = rsp_json["token"]
+        self.cookie = self.token
         return self.cookie
 
     def _set_token(self, request_infos):
-        global_cookie = Cookie()
-        if global_cookie.cookie is None:
-            global_cookie.cookie = self._get_token(role=self.role)
+        global_token = Token()
+        if global_token.token is None:
+            global_token.token = self._get_token()
 
-        self.cookie = global_cookie.cookie  # 从单利模式的全局变量处获得
-        Authorization = self.cookie["Cookie"].split("=")[1]  # 从cookie解析出token的内容, 用作Authorization
-        logger.debug("全局Cookie是{}".format(self.cookie))
+        self.token = global_token.token  # 从单利模式的全局变量处获得
+        logger.debug("全局token是{}".format(self.token))
+        Authorization = f"Bearer {self.token}"
         if request_infos.get("headers"):
-            request_infos["headers"].update(self.cookie)
             request_infos["headers"].update({"Authorization": Authorization})
             logger.debug("Heaeders是{}".format(request_infos["headers"]))
         else:
             import copy
-            request_infos["headers"] = copy.deepcopy(self.cookie)
+            request_infos["headers"] = {}
             request_infos["headers"].update({"Authorization": Authorization})
             logger.debug("Heaeders是{}".format(request_infos["headers"]))
         return request_infos
@@ -122,3 +118,8 @@ class BaseApi:
 
                     # TODO 需要针对列表类型, 使用pprint来打印
         logger.debug("")
+
+
+base = BaseApi()
+base.get_token()
+

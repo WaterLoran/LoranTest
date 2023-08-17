@@ -262,7 +262,7 @@ class ResponeseData(JsonData):
         logger.info("========  开始根据API数据层定义的rsp_check做自动断言  ========")
 
         # 仅仅对响应为成功的场景做自动断言操作
-        if rsp_data["code"] != "SUCCESS":
+        if rsp_data["code"] != 200:
             # 获取message信息
             # 获取code信息
             try:

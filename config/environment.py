@@ -1,8 +1,8 @@
 class Environment(object):
     def __init__(self):
-        # self._base_url = ""
-        self.username = ""
-        self.password = "LoranTest框架设计之日志功能"
+        self._base_url = "http://192.168.0.105/"
+        self.username = "admin"
+        self.password = "admin123"
 
     @property
     def base_url(self):
