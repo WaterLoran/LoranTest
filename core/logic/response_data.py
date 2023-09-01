@@ -19,7 +19,7 @@ class ResponeseData(JsonData):
                 pass
             try:
                 rsp_message = rsp_data["message"]
-                logger.error("响应对应的堆栈错误信息为为"+rsp_message)
+                logger.error("响应对应的堆栈错误信息为 "+rsp_message)
             except:
                 pass
 
@@ -186,7 +186,7 @@ class ResponeseData(JsonData):
         logger.debug("结束提取响应信息")
         return fetch_var_list
 
-    def check_rsp_check(self, req_body, rsp_data, rsp_check):
+    def check_rsp_check(self, req_json, rsp_data, rsp_check, check):
         def judge_api_check_expression_type(expression):
             expression_type = "string"
             if "$" in expression:
@@ -240,13 +240,13 @@ class ResponeseData(JsonData):
                     elif expression_type == "regex":
                         logger.debug("根据api层预定义的单个check信息做断言")
                         logger.debug("取值的表达式类型为regex")
-                        logger.debug("req_body: " + json.dumps(req_body))
+                        logger.debug("req_json: " + json.dumps(req_json))
                         logger.debug("value: " + str(value))
 
                         try:  #请求体中不含有目标jsonpath路径的异常情况
-                            except_obj = jsonpath.jsonpath(req_body, value)[0]
+                            except_obj = jsonpath.jsonpath(req_json, value)[0]
                         except Exception as err:
-                            raise RuoyiError("req_body_jsonpath_error", json_path=value)
+                            raise RuoyiError("req_json_jsonpath_error", json_path=value)
                         try:
                             target_obj = real_rsp[key]
                         except Exception as err:
@@ -261,51 +261,52 @@ class ResponeseData(JsonData):
 
         logger.info("========  开始根据API数据层定义的rsp_check做自动断言  ========")
 
-        # 仅仅对响应为成功的场景做自动断言操作
-        if rsp_data["code"] != 200:
-            # 获取message信息
-            # 获取code信息
+        # check不为None(即业务脚本层有传入断言信息), 且响应状态码为失败的情况下, 不做APi数据层的预定义断言
+        if rsp_data["code"] != "SUCCESS" and check is not None:
+            rsp_status = "failed"
+            logger.debug("此步骤中业务脚本层check信息不为None,且响应状态码为失败, 不做API数据层的预定义断言")
+            # 响应失败的情况下, 仅仅获取相关信息, 用于定位
             try:
                 rsp_code = rsp_data["code"]
-                logger.error("响应码为"+rsp_code)
+                logger.warning("响应码为"+rsp_code)
             except:
                 pass
             try:
                 rsp_message = rsp_data["message"]
-                logger.error("响应对应的堆栈错误信息为为"+rsp_message)
+                logger.warning("响应对应的堆栈错误信息为为"+rsp_message)
             except:
                 pass
-            assert False
+        else:
+            rsp_status = "success"
+            # 响应为失败时, 不使用API层的预定义断言
+            try:
+                logger.debug("API层预定义的rsp_check的信息为" + json.dumps(rsp_check, indent=2, ensure_ascii=False))
+                traverse_json(rsp_check, rsp_data, [])
+            except Exception as err:
+                logger.error("根据API数据层定义的rsp_check同步去做数据比较时候出现异常,请排查响应体中 是否有 和API层定义的期望json 同样的路径结构" + str(err))
+                logger.debug(err)
+                pytest_check.is_true(False)  # 主动捕捉异常并抛出pytest_check的异常, 并且不能影响参数的返回
 
+            for check_obj in pytest_check_cache:
+                check_type = check_obj["check_type"]
+                except_obj = check_obj["except_obj"]
+                target_obj = check_obj["target_obj"]
+                path = check_obj["path"]
 
-        try:
-            logger.debug("API层预定义的rsp_check的信息为" + json.dumps(rsp_check, indent=2, ensure_ascii=False))
-            traverse_json(rsp_check, rsp_data, [])
-        except Exception as err:
-            logger.error("根据API数据层定义的rsp_check同步去做数据比较时候出现异常,请排查响应体中 是否有 和API层定义的期望json 同样的路径结构" + str(err))
-            logger.debug(err)
-            pytest_check.is_true(False)  # 主动捕捉异常并抛出pytest_check的异常, 并且不能影响参数的返回
+                logger.debug("需要断言的总数量为" + str(len(pytest_check_cache)))
+                logger.debug("====  开始对单个API层预定义的检查项做断言  ====")
 
-        for check_obj in pytest_check_cache:
-            check_type = check_obj["check_type"]
-            except_obj = check_obj["except_obj"]
-            target_obj = check_obj["target_obj"]
-            path = check_obj["path"]
+                logger.debug("断言的类型为{}".format(check_type))
+                logger.debug("预定义期望的路径为{}".format(path))
 
-            logger.debug("需要断言的总数量为" + str(len(pytest_check_cache)))
-            logger.debug("====  开始对单个API层预定义的检查项做断言  ====")
-
-            logger.debug("断言的类型为{}".format(check_type))
-            logger.debug("预定义期望的路径为{}".format(path))
-
-            except_debug_str = "API数据层预定义的期望except_obj为{}, 数据类型为{}".format((except_obj), str(type(except_obj)))
-            logger.debug(except_debug_str)
-            target_debug_str = "实际的响应信息的target_obj为{}, 数据类型为{}".format((target_obj), str(type(target_obj)))
-            logger.debug(target_debug_str)
-            pytest_check_result = pytest_check.equal(except_obj, target_obj)
-            if not pytest_check_result:
-                logger.error("APi数据层预定义的断言结果为假  ==>  0  <== False ==> 假 <==")
-            logger.debug("====  结束对单个API层预定义的检查项做断言  ====\n")
+                except_debug_str = "API数据层预定义的期望except_obj为{}, 数据类型为{}".format((except_obj), str(type(except_obj)))
+                logger.debug(except_debug_str)
+                target_debug_str = "实际的响应信息的target_obj为{}, 数据类型为{}".format((target_obj), str(type(target_obj)))
+                logger.debug(target_debug_str)
+                pytest_check_result = pytest_check.equal(except_obj, target_obj)
+                if not pytest_check_result:
+                    logger.error("APi数据层预定义的断言结果为假  ==>  0  <== False ==> 假 <==")
+                logger.debug("====  结束对单个API层预定义的检查项做断言  ====\n")
 
         logger.info("========  结束根据API数据层定义的rsp_check做自动断言  ========\n")
-        pass
+        return rsp_status

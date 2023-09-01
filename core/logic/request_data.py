@@ -49,7 +49,7 @@ class RequestData(JsonData):
         if isinstance(paths, bool):  # 表示不是数字, 即以为着没找到
             raise RuoyiError("can_not_find_key_in_req_data", key=key)
         if len(paths) > 1:
-            raise RuoyiError("req_body_find_too_many_key", key=key, jsonpath_key=jsonpath_key)
+            raise RuoyiError("req_json_find_too_many_key", key=key, jsonpath_key=jsonpath_key)
         paths = paths[0]  # 因为所获得的路径是二维列表, 需要转换一下
         self._edit_one_path(paths, value)
 

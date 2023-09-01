@@ -33,8 +33,8 @@ class Api:
     def get_api_data(self, api_type, func, **kwargs):
         api_type_field = {
             # "APi的类型" : [[必须存在的字段], [可能存在的字段]]
-            "json": [["req_method", "req_url", "req_body"], ["rsp_check", "fill_req_body", "teardown"]],
-            "urlencode": [["req_method", "req_url", "req_params"], ["rsp_check", "fill_req_params"]],
+            "json": [["req_method", "req_url", "req_json"], ["rsp_check", "fill_req_json", "teardown"]],
+            "urlencode": [["req_method", "req_url", "req_params"], ["req_json", "rsp_check", "fill_req_params"]],
             "form_data": [["req_method", "req_url"], ["files", "data", "rsp_check"]],
         }
         required_para = api_type_field[api_type][0]
@@ -68,9 +68,11 @@ class Api:
             ResponeseData().check_all_expect(rsp_data, check)
         else:
             logger.debug(func.__name__ + "业务脚本层没有定义check信息, 此次请求不做主动断言")
-    def do_rsp_check(self, req_body, rsp_data, rsp_check):
+    def do_rsp_check(self, req_json, rsp_data, rsp_check, check):
+        rsp_status = "success"
         if rsp_check:  # 如果API数据层定义了断言关系
-            ResponeseData().check_rsp_check(req_body, rsp_data, rsp_check)
+            rsp_status = ResponeseData().check_rsp_check(req_json, rsp_data, rsp_check, check)
+        return rsp_status
 
     def do_fetch_all_value(self, rsp_data, fetch):
         if fetch:
@@ -118,10 +120,10 @@ class Api:
         teardown = None
         # 获取APi数据层的原始数据
         if api_type == "json":
-            req_method, req_url, req_body, rsp_check, fill_req_body, teardown = Api().get_api_data("json", func, **kwargs)
-            req_data = req_body
+            req_method, req_url, req_json, rsp_check, fill_req_json, teardown = Api().get_api_data("json", func, **kwargs)
+            req_data = req_json
         elif api_type == "urlencoded":
-            req_method, req_url, req_params, rsp_check, fill_req_params = Api().get_api_data("urlencode", func, **kwargs)
+            req_method, req_url, req_params, req_json, rsp_check, fill_req_params = Api().get_api_data("urlencode", func, **kwargs)
             req_data = req_params
         elif api_type == "form_data":
             req_method, req_url, files, data, rsp_check = Api().get_api_data("form_data", func, **kwargs)
@@ -132,48 +134,45 @@ class Api:
         # 使用业务层的入参对APi数据层的body进行入参填充
         logger.info(func.__name__ + "步骤的请求")
         if api_type == "json":
-            if fill_req_body is not False:
-                req_body = RequestData().modify(req_body, **kwargs)
+            if fill_req_json is not False:
+                req_json = RequestData().modify(req_json, **kwargs)
         elif api_type == "urlencoded":
             if fill_req_params is not False:
-                req_body = RequestData().modify(req_params, **kwargs)
+                req_json = RequestData().modify(req_params, **kwargs)
         else:
             pass
 
         # 使用请求的基类去做实际请求
         if api_type == "json":
-            rsp_data = BaseApi().send(method=req_method, url=req_url, json=req_body)
+            rsp_data = BaseApi().send(method=req_method, url=req_url, json=req_json)
         elif api_type == "urlencoded":
-            rsp_data = BaseApi().send(method=req_method, url=req_url, params=req_params)
+            if req_json is not None:
+                rsp_data = BaseApi().send(method=req_method, url=req_url, params=req_params, json=req_json)
+            else:
+                rsp_data = BaseApi().send(method=req_method, url=req_url, params=req_params)
         elif api_type == "form_data":
             rsp_data = BaseApi().send(method=req_method, url=req_url, files=files, data=data)
         else:
             pass
 
         # 根据check入参做断言操作
-        # TODO 需要在业务层提供传入check={}, 然后就不用去做校验, 目前这里是只对json类型和urlencoded类型的请求才做这个断言,
-        #  而对于特殊接口比如chunk_upload他的响应不是json类型的, 需要支持从用户层去传入{}空校验期望
-        #  规划成通过判断响应类型是否为json类型, 然后再去做对应的断言, 当前直接根据接口类型去决定是否要做断言的了
         logger.info(func.__name__ + " 步骤的断言")
         if api_type == "json" or api_type == "urlencoded" or api_type == "form_data":
             Api().do_check(check, func, rsp_data)
 
         # 根据Api数据层的预定义关系去做断言
-        # todo 这里发现chunk_upload这个接口的响应其实也是json类型的, 需要规划着去根据响应类型是否为json格式,
-        #  以及指定入参是否也为json格式去决定是否要做这个APi数据层的断言, 而不是直接根据请求的类型去做这个判断
-        # TODO 有些接口的响应格式不同意, 不如没有code: SUCCESS
         logger.info(func.__name__ + "步骤的API层预定义数据断言")
         if api_type == "json":
-            Api().do_rsp_check(req_body, rsp_data, rsp_check)
+            rsp_status = Api().do_rsp_check(req_json, rsp_data, rsp_check, check)
         elif api_type == "form_data":
-            Api().do_rsp_check(data, rsp_data, rsp_check)
-            # TODO 这里需要注意, 编写rsp_check的时候, 要求请求主体也是json类型de, 或者rep_check的检查需要提供支持列表类型的请求体
+            rsp_status = Api().do_rsp_check(data, rsp_data, rsp_check, check)
         elif api_type == "urlencoded":
-            Api().do_rsp_check(req_params, rsp_data, rsp_check)
+            rsp_status = Api().do_rsp_check(req_params, rsp_data, rsp_check, check)
 
         # 根据teardown信息, 去做数据存储
         if teardown:
-            StepData().update_step_data(req_data, rsp_data, teardown)
+            if rsp_status == "success":  # 只有响应为成功的时候, 才有获取step信息, 用于恢复环境的作用
+                StepData().update_step_data(req_data, rsp_data, teardown)
 
         # 根据fetch入参提取响应信息
         logger.info(func.__name__ + "步骤的信息提取")
