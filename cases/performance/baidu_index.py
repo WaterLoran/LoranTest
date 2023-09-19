@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Pjname ;ApiDome
-# @Time   :2020/11/30/22:19
-# @Author :Yuye
+# @Time   :2023/09/19/22:19
+# @Author :WaterLoran
 # @File   :LocustDome.py
 import time
 import sys
