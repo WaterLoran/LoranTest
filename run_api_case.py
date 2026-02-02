@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
 
     # 判断目录参数
-    dir = 'cases/api/'
+    dir = 'cases/ruoyi/api/'
     if args.dir:
         dir = args.dir
 
