@@ -1,15 +1,9 @@
 # -*- coding:utf8 -*-
 import os
 import argparse
-import logging
-from common.tool_logic.time_tool import DateTimeTool
 import platform
-from plugin.allure.allure_report_data import AllureFileClean
-from plugin.models import NotificationType
-from plugin.notify.lark import FeiShuTalkChatBot
-from config import notify as notify_config
 import pytest
-frame_logger = logging.getLogger(__name__)
+
 
 """
 提供的功能
@@ -31,24 +25,11 @@ if __name__ == '__main__':
     parser.add_argument('-clr', '--clr', help='是否清空已有测试结果,1:是、0:否,默认为0', type=str)
     args = parser.parse_args()
 
-    # 初始化java依赖的libs
-    # java_maven_init()
-    # # 因为是连跑环境,存在一定可能性需要初始化JAVA的Maven
-
-    # 初始化
-    print('%s 开始初始化......' % DateTimeTool.getNowTime())
-    frame_logger.info('%s 开始初始化......' % DateTimeTool.getNowTime())
-    # api_init() # 因为是连跑环境,存在一定可能性在连跑前重置环境
-    print('%s 初始化完成......' % DateTimeTool.getNowTime())
-    frame_logger.info('%s 初始化完成......' % DateTimeTool.getNowTime())
 
     # 执行pytest前的参数准备
     if platform.system() == "Windows":
-        pytest_execute_params = ['-c', 'config/pytest.ini', '-r', "3", '-v', '--alluredir', r'.\output\allure_result',
-                                 '--clean-alluredir']
-    else:
-        pytest_execute_params = ['-c', 'config/pytest.ini', '-r', "3", '-v', '--alluredir', r'./output/allure_result',
-                                 '--clean-alluredir']
+        pytest_execute_params = ['-r', "3", '-v', '--alluredir', r'.\output\allure_result', '--clean-alluredir']
+
 
     # 判断目录参数
     dir = 'cases/api/'
@@ -88,36 +69,15 @@ if __name__ == '__main__':
     pytest_execute_params.append(dir)
 
     try:
-        print('%s开始测试......' % DateTimeTool.getNowTime())
         print("pytest_execute_params", pytest_execute_params)
-        # update_environment_info()
-        # TODO 连跑完成之后, 看情况决定是否要删除环境信息
         exit_code = pytest.main(pytest_execute_params)
         print("自动化框架连跑结果值exit_code", exit_code)
-        print('%s结束测试......' % DateTimeTool.getNowTime())
 
-        eport_data_path = os.path.join(base_path, "output", "allure_result")
-        report_path = os.path.join(base_path, "output", "report")
         if platform.system() == "Windows":
-            # os.system(f"allure generate {eport_data_path} -o {report_path} --clean")
-            os.system(r"allure generate E:\Develop\LoranTest\output\allure_result -o E:\Develop\LoranTest\output\report")
-        else:
-            # os.system(f"allure generate {eport_data_path} -o {report_path} --clean")
-            # 使用定时脚本去跑的时候, 这里可以生成allure_result. 并清除完原目录, 并且此命令对CICD中的操作无影响, 先暂时保留
-            os.system(r"cd /usr/local/LoranTest/; allure generate /usr/local/LoranTest/output/allure_result -o /usr/local/LoranTest/output/report --clean")
-
-        # 只在非Window环境才去发生飞书通知
-        if platform.system() != "Windows":
-            allure_data = AllureFileClean().get_case_count()
-            notification_mapping = {
-                NotificationType.FEI_SHU.value: FeiShuTalkChatBot(allure_data).post
-            }
-            notification_mapping.get(notify_config.notify_tool)()
-
-        # 启动服务的步骤, 由定时shell脚本去启动, 这不属于自动化框架
-
-    except Exception as err:
-        print("发送飞书通知的时候出现错误err", err)
-
-    if platform.system() == "Windows":
-        input("please input any key to exit!")
+            allure_result_path = r"E:\Develop\RuoYiTest\output\allure_result"
+            allure_report_path = r"E:\Develop\RuoYiTest\output\allure_report"
+            os.system(f"allure generate {allure_result_path} -o {allure_report_path} --clean")
+        #     # TODO 拉起进程前, 需要杀掉allure的进程, window情况直接手工点击 output下的allure_report下的index.html 即可
+        #     os.system(f"allure open -h 127.0.0.1 -p 8078 {allure_report_path}")
+    except:
+        pass

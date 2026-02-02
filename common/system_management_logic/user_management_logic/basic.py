@@ -1,0 +1,140 @@
+from core.logic import *
+
+
+@Api.json
+@allure.step("添加用户-add_user")
+def add_user(userName="", nickName="", password="", **kwargs):
+    req_url = "/dev-api/system/user"
+    req_method = "POST"
+    req_json = {
+        "deptId": None,  # 部门ID
+        "userName": "",  # 用户名称
+        "nickName": "",  # 用户昵称
+        "password": "",  # 密码
+        "phonenumber": "",  # 电话号码
+        "email": "",
+        "sex": "",  # 性别 0表示男, 1表示女
+        "status": "",  # 状态, 0表示启用, 1表示停用
+        "remark": "",  # 备注
+        "postIds": [],  # 岗位ID
+        "roleIds": []  # 角色
+    }
+    req_field = {
+        "req_json_all": {"jsonpath": "$"},
+        "userName": {"jsonpath": "$.userName"},
+        "nickName": {"jsonpath": "$.nickName"},
+        "password": {"jsonpath": "$.password"},
+    }
+    rsp_field = {
+        "msg": {"jsonpath": "$.msg"}
+    }
+    rsp_check = {
+        "msg": "操作成功",
+        "code": 200,
+    }
+    return locals()
+
+@Api.json
+@allure.step("修改用户-mod_user")
+def mod_user(**kwargs):
+    req_url = "/dev-api/system/user"
+    req_method = "PUT"
+    req_json = {
+        "createBy": "",
+        "createTime": "",
+        "updateBy": None,
+        "updateTime": None,
+        "remark": "",
+        "userId": None,
+        "deptId": None,
+        "userName": "",
+        "nickName": "",
+        "email": "",
+        "phonenumber": "",
+        "sex": "0",
+        "avatar": "",
+        "password": "",
+        "status": "0",
+        "delFlag": "0",
+        "loginIp": "",
+        "loginDate": None,
+        "dept": None,
+        "roles": [],
+        "roleIds": [],
+        "postIds": [],
+        "roleId": None,
+        "admin": False
+    }
+    req_field = {
+        "deptId": {"jsonpath": "$.deptId"},
+    }
+    rsp_check = {
+        "msg": "操作成功",
+        "code": 200,
+    }
+    return locals()
+
+@Api.urlencoded
+@allure.step("查看用户")
+def lst_user(**kwargs):
+    req_url = "/dev-api/system/user/list"
+    req_method = "GET"
+    req_params = {
+        "pageNum": 1,
+        "pageSize": 10
+    }
+    rsp_field = {
+        "msg": {"jsonpath": "$.msg"}
+    }
+    return locals()
+
+@Api.json
+@allure.step("删除用户")
+def lst_user_by_id(userId="", **kwargs):
+    req_url = f"/dev-api/system/user/{userId}"
+    req_method = "GET"
+    req_json = {}
+    auto_fill = False
+    return locals()
+
+@Api.json
+@allure.step("删除用户")
+def rmv_user(userId="", **kwargs):
+    req_url = f"/dev-api/system/user/{userId}"
+    req_method = "DELETE"
+    req_json = {}
+    auto_fill = False
+    return locals()
+
+
+@Api.form_data
+@allure.step("通过导入文件来增加用户")
+def mod_user_by_upload(file_name="", updateSupport=0, **kwargs):
+    req_url = "/dev-api/system/user/importData"
+    req_method = "POST"
+    req_params = {
+        "updateSupport": updateSupport  # 0表示不覆盖, True表示覆盖
+    }
+    files = {"file": file_name}
+    rsp_check = {
+        "code": 200
+    }
+    return locals()
+
+
+@Api.urlencoded
+@allure.step("查看用户-附带restore")
+def lst_user_wtih_restore(userName="", **kwargs):
+    req_url = "/dev-api/system/user/list"
+    req_method = "GET"
+    req_params = {
+        "pageNum": 1,
+        "pageSize": 10
+    }
+    restore = {
+        "rmv_user": {
+            "userId": f"$.rows[?(@.userName=='{userName}')].userId"
+        }
+    }
+    auto_fill = False
+    return locals()
