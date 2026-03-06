@@ -17,27 +17,34 @@ class RequestData:
 
     def _edit_one_path(self, paths: list, value):
         """
-        根据jsonpath路径去请求体中去修改
-        :param paths:
-        :param value:
-        :return:
+        根据jsonpath路径去请求体中去修改叶子节点的值
         """
-        alias_of_data = self.req_body
-        for path in paths[0:-1]:
-            if path.isdigit():  # 是数字的话
-                alias_of_data = alias_of_data[int(path)]
-            else:               # 不是数字的话
-                alias_of_data = alias_of_data[path]
 
-        try:
-            if paths[-1].isdigit():
-                alias_of_data[int(paths[-1])] = value
-            else:
-                alias_of_data[paths[-1]] = value
-        except Exception:
-            raise
+        def edit_recursive(data, path_list):
+            if len(path_list) == 1:
+                key = path_list[0]
+                try:
+                    # 尝试直接赋值，让Python处理类型转换
+                    if isinstance(data, list):
+                        data[int(key)] = value
+                    else:
+                        data[key] = value
+                except (ValueError, IndexError, KeyError, TypeError) as e:
+                    raise ValueError(f"无法设置路径 {key}: {e}")
+                return
 
-        self.req_body = alias_of_data
+            current_key = path_list[0]
+            try:
+                if isinstance(data, list):
+                    next_data = data[int(current_key)]
+                else:
+                    next_data = data[current_key]
+            except (ValueError, IndexError, KeyError, TypeError) as e:
+                raise ValueError(f"无效路径 {current_key}: {e}")
+
+            edit_recursive(next_data, path_list[1:])
+
+        edit_recursive(self.req_body, paths)
 
 
 
