@@ -176,8 +176,11 @@
 
    参考test_excel_assert_001脚本, 注意被用于断言的文件需要放在files目录下, 一般用法为先将文件下载到files目录下, 然后接着去断言
 
-   
-   
-9. # 进一步的深入的提纲内容, 技术群信息
+# 9. 被测环境部署方法
+
+docker run -d -p 6161:80 -v ruoyi_data:/app/data --name ruoyi --restart unless-stopped waterloran/ruoyi-for-lorantest:latest
+被测系统的仓库: https://github.com/WaterLoran/RuoYi    
+
+# 10.  进一步的深入的提纲内容, 技术群信息
 
    添加微信: 13538302392 并备注Ruoyitest, 即可拉入群聊沟通学习
