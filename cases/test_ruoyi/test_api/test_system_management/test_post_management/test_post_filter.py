@@ -49,6 +49,7 @@ class TestPostFilter(object):
         )
         lst_position(
             postName=self.post_name,
+            fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{self.post_name}')].postId"]],
             check=[["$.code", "eq", 200], ["$.total", ">=", 1]],
         )
 
@@ -63,6 +64,7 @@ class TestPostFilter(object):
         )
         lst_position(
             postCode=self.post_code,
+            fetch=[[self.reg, "position_id", f"$.rows[?(@.postCode=='{self.post_code}')].postId"]],
             check=[["$.code", "eq", 200], ["$.total", ">=", 1]],
         )
 
@@ -84,6 +86,10 @@ class TestPostFilter(object):
         )
         lst_position(
             postName=self.post_name,
+            fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{self.post_name}')].postId"]],
+        )
+        lst_position(
+            postName=self.post_name,
             status="0",
             check=[["$.code", "eq", 200], ["$.total", ">=", 1]],
         )
@@ -97,6 +103,10 @@ class TestPostFilter(object):
             postSort=1,
             status="1",
             check=[["$.code", "eq", 200]],
+        )
+        lst_position(
+            postName=self.post_name,
+            fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{self.post_name}')].postId"]],
         )
         lst_position(
             postCode=self.post_code,
@@ -115,6 +125,10 @@ class TestPostFilter(object):
         )
         lst_position(
             postName=self.post_name,
+            fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{self.post_name}')].postId"]],
+        )
+        lst_position(
+            postName=self.post_name,
             postCode=self.post_code,
             check=[["$.code", "eq", 200], ["$.total", ">=", 1]],
         )
@@ -128,6 +142,10 @@ class TestPostFilter(object):
             postSort=1,
             status="0",
             check=[["$.code", "eq", 200]],
+        )
+        lst_position(
+            postName=self.post_name,
+            fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{self.post_name}')].postId"]],
         )
         lst_position(
             postName=self.post_name,

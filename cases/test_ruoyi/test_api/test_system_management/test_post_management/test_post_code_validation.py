@@ -21,16 +21,22 @@ def _pid(reg):
 class TestPostCodeValidation(object):
     """岗位编码验证"""
 
+    def setup_method(self):
+        self.reg = register({"position_id": None, "position_id2": None})
+
     def _name(self, case_id):
         return f"{case_id}_{int(time.time())}_{random.randint(1000, 9999)}"
 
-    def _clean(self, reg):
-        pid = _pid(reg)
-        if pid:
-            try:
-                rmv_position(positionId=pid)
-            except Exception:
-                pass
+    def teardown_method(self):
+        for key in ("position_id", "position_id2"):
+            pid = getattr(self.reg, key, None)
+            if isinstance(pid, list) and pid:
+                pid = pid[0]
+            if pid:
+                try:
+                    rmv_position(positionId=pid)
+                except Exception:
+                    pass
 
     @allure.title("TC-C01: 编码为空")
     def test_code_empty(self):
@@ -50,7 +56,7 @@ class TestPostCodeValidation(object):
             check=[["$.code", "eq", 500], ["$.msg", "include", "岗位编码不能为空"]],
         )
 
-    @allure.title("TC-C03: 编码1字符")
+    @allure.title("TC-C03: 编码1字符-应允许创建")
     def test_code_one_char(self):
         name = self._name("TC_C03")
         code = random.choice(["x", "y", "z", "a", "b"])
@@ -58,14 +64,9 @@ class TestPostCodeValidation(object):
             positionName=name,
             positionCode=code,
             postSort=1,
-            check=[["$.code", "in", [200, 500]]],
+            check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        try:
-            lst_position(postName=name, fetch=[[reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
-            self._clean(reg)
-        except Exception:
-            pass
+        lst_position(postName=name, fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
 
     @allure.title("TC-C04: 编码64字符边界")
     def test_code_64_chars(self):
@@ -78,9 +79,7 @@ class TestPostCodeValidation(object):
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postName=name, fetch=[[reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
-        self._clean(reg)
+        lst_position(postName=name, fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
 
     @allure.title("TC-C05: 编码65字符超长")
     def test_code_65_chars(self):
@@ -103,9 +102,7 @@ class TestPostCodeValidation(object):
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postName=name, fetch=[[reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
-        self._clean(reg)
+        lst_position(postName=name, fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
 
     @allure.title("TC-C07: 编码字母数字")
     def test_code_alpha_num(self):
@@ -117,9 +114,7 @@ class TestPostCodeValidation(object):
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postName=name, fetch=[[reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
-        self._clean(reg)
+        lst_position(postName=name, fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
 
     @allure.title("TC-C08: 编码下划线")
     def test_code_underscore(self):
@@ -131,9 +126,7 @@ class TestPostCodeValidation(object):
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postName=name, fetch=[[reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
-        self._clean(reg)
+        lst_position(postName=name, fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
 
     @allure.title("TC-C09: 编码中文")
     def test_code_chinese(self):
@@ -145,9 +138,7 @@ class TestPostCodeValidation(object):
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postName=name, fetch=[[reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
-        self._clean(reg)
+        lst_position(postName=name, fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
 
     @allure.title("TC-C10: 编码特殊字符")
     def test_code_special(self):
@@ -159,26 +150,28 @@ class TestPostCodeValidation(object):
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postName=name, fetch=[[reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
-        self._clean(reg)
+        lst_position(postName=name, fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
 
-    @allure.title("TC-C11: 编码前后空格")
+    @allure.title("TC-C11: 编码前后空格-系统应自动trim后存储")
     def test_code_leading_trailing_spaces(self):
         name = self._name("TC_C11")
-        code = f"  TC_C11_{int(time.time())}  "
+        ts = int(time.time())
+        code_with_spaces = f"  TC_C11_{ts}  "
+        code_trimmed = f"TC_C11_{ts}"
         add_position(
             positionName=name,
-            positionCode=code,
+            positionCode=code_with_spaces,
             postSort=1,
-            check=[["$.code", "in", [200, 500]]],
+            check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        try:
-            lst_position(postName=name, fetch=[[reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]])
-            self._clean(reg)
-        except (TypeError, IndexError):
-            pass
+        lst_position(
+            postName=name,
+            fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{name}')].postId"]],
+        )
+        lst_position_detail(
+            positionId=_pid(self.reg),
+            check=[["$.data.postCode", "eq", code_trimmed]],
+        )
 
     @allure.title("TC-C12: 编码null/缺失")
     def test_code_null(self):
@@ -188,7 +181,7 @@ class TestPostCodeValidation(object):
             check=[["$.code", "eq", 500], ["$.msg", "include", "岗位编码不能为空"]],
         )
 
-    @allure.title("TC-C13: 编码大小写区分")
+    @allure.title("TC-C13: 编码大小写区分-大小写不同应视为不同编码")
     def test_code_case_sensitive(self):
         ts = int(time.time())
         name1 = self._name("TC_C13_a")
@@ -196,27 +189,15 @@ class TestPostCodeValidation(object):
         code_a = f"TC_C13_Abc_{ts}"
         code_b = f"TC_C13_abc_{ts}"
         add_position(positionName=name1, positionCode=code_a, postSort=1, check=[["$.code", "eq", 200]])
-        reg = register({"position_id": None, "position_id2": None})
-        lst_position(postName=name1, fetch=[[reg, "position_id", f"$.rows[?(@.postName=='{name1}')].postId"]])
-        pid1 = _pid(reg)
-        add_position(positionName=name2, positionCode=code_b, postSort=1, check=[["$.code", "in", [200, 500]]])
-        try:
-            lst_position(postName=name2, fetch=[[reg, "position_id2", f"$.rows[?(@.postName=='{name2}')].postId"]])
-        except Exception:
-            reg.position_id2 = None
-        pid2 = reg.position_id2[0] if isinstance(reg.position_id2, list) and reg.position_id2 else reg.position_id2
-        if pid1:
-            rmv_position(positionId=pid1)
-        if pid2 and pid2 != pid1:
-            rmv_position(positionId=pid2)
+        lst_position(postName=name1, fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{name1}')].postId"]])
+        add_position(positionName=name2, positionCode=code_b, postSort=1, check=[["$.code", "eq", 200]])
+        lst_position(postName=name2, fetch=[[self.reg, "position_id2", f"$.rows[?(@.postName=='{name2}')].postId"]])
 
     @allure.title("TC-C14: 编码与名称同值")
     def test_code_same_as_name(self):
         same = f"TC_C14_{int(time.time())}"
         add_position(positionName=same, positionCode=same, postSort=1, check=[["$.code", "eq", 200]])
-        reg = register({"position_id": None})
-        lst_position(postCode=same, fetch=[[reg, "position_id", f"$.rows[?(@.postCode=='{same}')].postId"]])
-        self._clean(reg)
+        lst_position(postCode=same, fetch=[[self.reg, "position_id", f"$.rows[?(@.postCode=='{same}')].postId"]])
 
     @allure.title("TC-C15: 编码超长128字符")
     def test_code_128_chars(self):

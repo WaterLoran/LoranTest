@@ -831,17 +831,92 @@ config.user.designer_1.id
 
 ### 10.7 待排查问题记录
 
-编写过程中，若遇到当前无法解决的问题，须将问题详情记录至当前测试用例目录下的 `to_check_record.md` 文件中，以便后续人工跟进排查。
+编写过程中，若遇到当前无法解决的问题，须将问题详情记录至根目录下的 `to_check_record.md` 文件中，以便后续人工跟进排查。
 
 ### 10.8 业务合理性审查与 BUG 记录
 
-编写脚本过程中，须对被测接口的业务逻辑合理性（包括但不限于参数校验、状态流转、权限控制等）进行审查。若发现疑似 BUG（即接口实际行为与预期业务规则不符），须将 BUG 信息记录至当前测试用例同目录下的 `to_check_bug.md` 文件中。
+编写脚本过程中，须对被测接口的业务逻辑合理性（包括但不限于参数校验、状态流转、权限控制等）进行审查。若发现疑似 BUG（即接口实际行为与预期业务规则不符），须将 BUG 信息追加记录至根目录下的 `to_check_bug.md` 文件中。
 
 ### 10.9 测试数据独立性要求
 
 每个测试脚本所依赖的数据必须由脚本自身创建，禁止直接引用系统中已有的存量数据。例如，若测试场景需要对某用户进行授权操作，须在脚本中先创建一个专属于该脚本的用户，而非复用已有用户。创建数据时，命名应优先包含当前测试脚本的 `case_id` 字符串，以便在数据残留时能够快速定位归属脚本并进行清理。
 
+### 10.10 引用数据同步性验证
 
+**适用场景**：当实体 A 被实体 B 通过 ID 引用时（例如用户引用了岗位、角色引用了菜单、部门引用了上级部门），修改 A 的名称/编码等展示性字段后，需验证查询 B 时引用的 A 的字段是否已更新为最新值。
+
+**BUG 本质**：系统在 B 中冗余存储（缓存）了 A 的名称，修改 A 后未同步更新 B 中的冗余字段，导致 B 展示 A 的陈旧数据。
+
+**编写模式**：
+
+```python
+@allure.title("修改岗位名称后-用户详情中引用的岗位名称应同步更新")
+def test_ref_sync_after_rename(self):
+    reg = register({
+        "position_id": None,
+        "user_id": None,
+    })
+    self.reg = reg
+    ts = int(time.time())
+    original_name = f"岗位原名_{ts}"
+    new_name = f"岗位新名_{ts}"
+
+    # 步骤 1: 创建被引用实体 A（岗位）
+    add_position(
+        positionName=original_name,
+        positionCode=f"REF_SYNC_{ts}",
+        postSort=1,
+        fetch=[[reg, "position_id", "$.postId"]],
+    )
+
+    # 步骤 2: 创建引用方 B（用户），引用 A
+    add_user(
+        userName=f"ref_sync_user_{ts}",
+        postIds=[reg.position_id],
+        # ... 其他必填字段
+        fetch=[[reg, "user_id", "$.userId"]],
+    )
+
+    # 步骤 3: 修改 A 的名称
+    mod_position(
+        positionId=reg.position_id,
+        positionName=new_name,
+        positionCode=f"REF_SYNC_{ts}",
+        postSort=1,
+        check=[["$.code", "eq", 200]],
+    )
+
+    # 步骤 4: 查询 B 的详情，断言引用的 A 字段已更新为最新值
+    lst_user_detail(
+        userId=reg.user_id,
+        check=[["$.data.posts[0].postName", "eq", new_name]],
+    )
+```
+
+**关键要点**：
+
+1. **先建 A → 建 B（引用 A）→ 改 A → 查 B**：这是固定的四步验证流程。
+2. **断言目标是 B 中引用 A 的展示字段**：如 `$.data.posts[0].postName`、`$.data.roles[0].roleName`、`$.data.dept.deptName` 等，而非 A 自身的详情。
+3. **准备两个名称**：`original_name`（创建时用）和 `new_name`（修改后用），断言时期望 B 中展示 `new_name`。
+4. **常见引用关系**（若依系统为例）：
+
+| 被引用实体 A | 引用方 B | B 中展示 A 的字段路径（示例） |
+|-------------|----------|-------------------------------|
+| 岗位 | 用户 | `$.data.posts[*].postName` |
+| 角色 | 用户 | `$.data.roles[*].roleName` |
+| 部门 | 用户 | `$.data.dept.deptName` |
+| 字典类型 | 字典数据 | `$.data.dictType`（类型名称） |
+| 上级部门 | 子部门 | `$.data.parentName` |
+
+5. **teardown 中先删 B 再删 A**：因为 B 引用了 A，须先解除引用关系后再删被引用方。
+
+```python
+def teardown_method(self):
+    if getattr(self.reg, "user_id", None):
+        rmv_user(userIds=[self.reg.user_id])
+    if getattr(self.reg, "position_id", None):
+        rmv_position(positionIds=[self.reg.position_id])
+```
 
 ## 11. Allure 报告装饰器
 

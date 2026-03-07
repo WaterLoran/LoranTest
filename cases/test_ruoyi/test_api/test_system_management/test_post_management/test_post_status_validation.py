@@ -72,7 +72,7 @@ class TestPostStatusValidation(object):
         lst_position_detail(positionId=_pid(self.reg), check=[["$.data.status", "eq", "1"]])
         lst_position(status="1", check=[["$.code", "eq", 200]])
 
-    @allure.title("TC-E03: status无效值2")
+    @allure.title("TC-E03: status无效值2-存储的状态应为合法枚举(0或1)")
     def test_status_invalid(self):
         self._gen("TC_E03")
         add_position(
@@ -80,11 +80,15 @@ class TestPostStatusValidation(object):
             positionCode=self.post_code,
             postSort=1,
             status="2",
-            check=[["$.code", "in", [200, 500]]],
+            check=[["$.code", "eq", 200]],
         )
         lst_position(
             postName=self.post_name,
             fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{self.post_name}')].postId"]],
+        )
+        lst_position_detail(
+            positionId=_pid(self.reg),
+            check=[["$.data.status", "in", ["0", "1"]]],
         )
 
     @allure.title("TC-E04: status空字符串")

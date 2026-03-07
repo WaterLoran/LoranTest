@@ -83,18 +83,22 @@ class TestPostSortValidation(object):
         )
         lst_position_detail(positionId=_pid(self.reg), check=[["$.data.postSort", "eq", 2147483647]])
 
-    @allure.title("TC-D04: postSort负数")
+    @allure.title("TC-D04: postSort负数-存储的值应为非负整数")
     def test_sort_negative(self):
         self._gen("TC_D04")
         add_position(
             positionName=self.post_name,
             positionCode=self.post_code,
             postSort=-1,
-            check=[["$.code", "in", [200, 500]]],
+            check=[["$.code", "eq", 200]],
         )
         lst_position(
             postName=self.post_name,
             fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{self.post_name}')].postId"]],
+        )
+        lst_position_detail(
+            positionId=_pid(self.reg),
+            check=[["$.data.postSort", ">=", 0]],
         )
 
     @allure.title("TC-D05: postSort空null")
@@ -107,7 +111,7 @@ class TestPostSortValidation(object):
             check=[["$.code", "eq", 500], ["$.msg", "include", "显示顺序不能为空"]],
         )
 
-    @allure.title("TC-D06: postSort小数")
+    @allure.title("TC-D06: postSort小数-存储的值应为整数")
     def test_sort_decimal(self):
         self._gen("TC_D06")
         add_position(
@@ -119,6 +123,10 @@ class TestPostSortValidation(object):
         lst_position(
             postName=self.post_name,
             fetch=[[self.reg, "position_id", f"$.rows[?(@.postName=='{self.post_name}')].postId"]],
+        )
+        lst_position_detail(
+            positionId=_pid(self.reg),
+            check=[["$.data.postSort", "eq", 1]],
         )
 
     @allure.title("TC-D07: postSort字符串")

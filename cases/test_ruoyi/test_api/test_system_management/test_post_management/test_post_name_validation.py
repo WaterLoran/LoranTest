@@ -21,8 +21,19 @@ def _pid(reg):
 class TestPostNameValidation(object):
     """岗位名称验证"""
 
+    def setup_method(self):
+        self.reg = register({"position_id": None})
+
     def _code(self, case_id):
         return f"{case_id}_c_{int(time.time())}_{random.randint(1000, 9999)}"
+
+    def teardown_method(self):
+        pid = _pid(self.reg)
+        if pid:
+            try:
+                rmv_position(positionId=pid)
+            except Exception:
+                pass
 
     @allure.title("TC-B01: 名称为空")
     def test_name_empty(self):
@@ -42,26 +53,18 @@ class TestPostNameValidation(object):
             check=[["$.code", "eq", 500], ["$.msg", "include", "岗位名称不能为空"]],
         )
 
-    @allure.title("TC-B03: 名称1字符")
+    @allure.title("TC-B03: 名称1字符-应允许创建")
     def test_name_one_char(self):
         code = self._code("TC_B03")
-        ts = str(int(time.time()))[-1]
         one_char_names = ["岗", "测", "A", "Z", "1", "9"]
         name = one_char_names[random.randint(0, len(one_char_names) - 1)]
         add_position(
             positionName=name,
             positionCode=code,
             postSort=1,
-            check=[["$.code", "in", [200, 500]]],
+            check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        try:
-            lst_position(postCode=code, fetch=[[reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
-            pid = _pid(reg)
-            if pid:
-                rmv_position(positionId=pid)
-        except Exception:
-            pass
+        lst_position(postCode=code, fetch=[[self.reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
 
     @allure.title("TC-B04: 名称50字符边界")
     def test_name_50_chars(self):
@@ -74,11 +77,7 @@ class TestPostNameValidation(object):
             postSort=1,
             check=[["$.msg", "eq", "操作成功"], ["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postCode=code, fetch=[[reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
-        pid = _pid(reg)
-        if pid:
-            rmv_position(positionId=pid)
+        lst_position(postCode=code, fetch=[[self.reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
 
     @allure.title("TC-B05: 名称51字符超长")
     def test_name_51_chars(self):
@@ -101,11 +100,7 @@ class TestPostNameValidation(object):
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postCode=code, fetch=[[reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
-        pid = _pid(reg)
-        if pid:
-            rmv_position(positionId=pid)
+        lst_position(postCode=code, fetch=[[self.reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
 
     @allure.title("TC-B07: 名称特殊字符")
     def test_name_special_chars(self):
@@ -118,11 +113,7 @@ class TestPostNameValidation(object):
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postCode=code, fetch=[[reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
-        pid = _pid(reg)
-        if pid:
-            rmv_position(positionId=pid)
+        lst_position(postCode=code, fetch=[[self.reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
 
     @allure.title("TC-B08: 名称数字")
     def test_name_digits(self):
@@ -135,45 +126,49 @@ class TestPostNameValidation(object):
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postCode=code, fetch=[[reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
-        pid = _pid(reg)
-        if pid:
-            rmv_position(positionId=pid)
+        lst_position(postCode=code, fetch=[[self.reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
 
-    @allure.title("TC-B09: 名称前后空格")
+    @allure.title("TC-B09: 名称前后空格-系统应自动trim后存储")
     def test_name_leading_trailing_spaces(self):
         code = self._code("TC_B09")
         ts = int(time.time())
-        name = f"  TC_B09_{ts}  "
+        name_with_spaces = f"  TC_B09_{ts}  "
+        name_trimmed = f"TC_B09_{ts}"
         add_position(
-            positionName=name,
+            positionName=name_with_spaces,
             positionCode=code,
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postCode=code, fetch=[[reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
-        pid = _pid(reg)
-        if pid:
-            rmv_position(positionId=pid)
+        lst_position(
+            postCode=code,
+            fetch=[[self.reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]],
+        )
+        lst_position_detail(
+            positionId=_pid(self.reg),
+            check=[["$.data.postName", "eq", name_trimmed]],
+        )
 
-    @allure.title("TC-B10: 名称换行符")
+    @allure.title("TC-B10: 名称换行符-存储的名称不应包含换行符")
     def test_name_newline(self):
         code = self._code("TC_B10")
         ts = int(time.time())
-        name = f"TC_B10_行1\n行2_{ts}"
+        name_with_newline = f"TC_B10_行1\n行2_{ts}"
+        name_expected = f"TC_B10_行1行2_{ts}"
         add_position(
-            positionName=name,
+            positionName=name_with_newline,
             positionCode=code,
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postCode=code, fetch=[[reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
-        pid = _pid(reg)
-        if pid:
-            rmv_position(positionId=pid)
+        lst_position(
+            postCode=code,
+            fetch=[[self.reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]],
+        )
+        lst_position_detail(
+            positionId=_pid(self.reg),
+            check=[["$.data.postName", "eq", name_expected]],
+        )
 
     @allure.title("TC-B11: 名称HTML标签")
     def test_name_html_tag(self):
@@ -186,11 +181,7 @@ class TestPostNameValidation(object):
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postCode=code, fetch=[[reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
-        pid = _pid(reg)
-        if pid:
-            rmv_position(positionId=pid)
+        lst_position(postCode=code, fetch=[[self.reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
 
     @allure.title("TC-B12: 名称SQL注入尝试")
     def test_name_sql_injection(self):
@@ -203,11 +194,7 @@ class TestPostNameValidation(object):
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postCode=code, fetch=[[reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
-        pid = _pid(reg)
-        if pid:
-            rmv_position(positionId=pid)
+        lst_position(postCode=code, fetch=[[self.reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
 
     @allure.title("TC-B13: 名称XSS尝试")
     def test_name_xss(self):
@@ -220,11 +207,7 @@ class TestPostNameValidation(object):
             postSort=1,
             check=[["$.code", "eq", 200]],
         )
-        reg = register({"position_id": None})
-        lst_position(postCode=code, fetch=[[reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
-        pid = _pid(reg)
-        if pid:
-            rmv_position(positionId=pid)
+        lst_position(postCode=code, fetch=[[self.reg, "position_id", f"$.rows[?(@.postCode=='{code}')].postId"]])
 
     @allure.title("TC-B14: 名称null/缺失")
     def test_name_null(self):
