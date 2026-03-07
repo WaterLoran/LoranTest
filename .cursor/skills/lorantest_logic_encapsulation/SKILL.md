@@ -22,6 +22,7 @@ logic: 对API封装之后的代码, 即为logic
 4. 定义响应处理逻辑
 5. 判断当前封装得到的logic在common目录下是否已经有重复的logic了
 6. 如果在common目录下没有重复的logic则将logic文件组织到common目录下
+7. 若用新 Logic 模块替代旧模块（如从 `common/department_management_logic` 迁移到 `common/system_management_logic/xxx_management_logic`），需**彻底删除旧目录**：删除该目录下的所有内容（含 `__pycache__`、`.pyc` 等），并删除目录本身；同时从 `common/ruoyi_logic.py` 等入口移除对旧模块的导入。
 
 **封装完成后得到的代码文件称为 Logic**（逻辑文件），这是封装工作的最终产出物。
 
@@ -29,6 +30,7 @@ logic: 对API封装之后的代码, 即为logic
 
 ```
 分析API → 封装API → 得到Logic → 判断logic是否已存在 → 不存在则组织到common的对应目录下
+若替代旧模块 → 彻底删除旧目录（含 __pycache__）及目录本身，并移除入口中的旧导入
 ```
 
 
@@ -150,7 +152,15 @@ common/
 - 超过7个API → 创建目录拆分到多个文件
 - `__init__.py` 只用于导入，不定义API函数
 
-### 1.3.5 完整工作流示例
+### 1.3.6 清理旧模块（替代/迁移时）
+
+当用新的 Logic 模块替代或迁移旧模块时，必须**彻底删除旧目录**，避免残留导致混淆或误导入：
+
+- 删除旧目录下的**所有内容**：包括 `.py` 文件、`__pycache__` 目录及其中的 `.pyc` 文件等
+- 删除**目录本身**：如 `common/department_management_logic` 整目录移除（如使用 `rm -rf common/xxx`）
+- 同步修改入口：从 `common/ruoyi_logic.py`（或其它总入口）中移除对旧模块的 `from common.xxx import *`
+
+### 1.3.7 完整工作流示例
 
 ```python
 # 1. 分析API URL
