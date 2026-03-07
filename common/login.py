@@ -19,6 +19,12 @@ class LoginPlugin:
         # 通过业务上下文获取配置信息
         service_context = ServiceContext()
         config = service_context.config
+        
+        # 如果config是字典，尝试转换为EasyDict访问
+        if isinstance(config, dict):
+            from easydict import EasyDict
+            config = EasyDict(config)
+        
         if select == "main":  # 默认环境的登录方法, 这里的读取配置需要提前读取先
             base_url = config.env.main.domain
             username = config.env.main.username
@@ -38,6 +44,10 @@ class LoginPlugin:
             url = "/dev-api/login"
             # 如果不是admin用户的话, 则需要从另外一个 配置表 user表中去获取相关数据
             if user != "admin":
+                # 确保config.user是EasyDict
+                if isinstance(config.user, dict):
+                    from easydict import EasyDict
+                    config.user = EasyDict(config.user)
                 username = config.user[user]["name"]
                 password = config.user[user]["password"]
             login_json = {
