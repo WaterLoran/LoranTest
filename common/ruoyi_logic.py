@@ -5,6 +5,5 @@ from core.init import *
 from common.system_management_logic import *
 from common.personal_center_logic import *
 from common.basic_logic import *
-from common.department_management_logic import *
 
 
