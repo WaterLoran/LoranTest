@@ -1,4 +1,5 @@
-from core.logic import *
+from core.logic import Api
+import allure
 
 
 @Api.json
@@ -32,6 +33,17 @@ def add_user(userName="", nickName="", password="", **kwargs):
         "msg": "操作成功",
         "code": 200,
     }
+    
+    # 恢复机制定义：从响应中提取用户ID，用于后续清理
+    # 注意：add_user成功时返回{"msg": "操作成功", "code": 200}
+    # 但响应中没有data.userId字段，需要通过查询接口获取用户ID
+    # 这里使用查询方式获取用户ID
+    restore = {
+        "rmv_user": {
+            "userId": f"$.rows[?(@.userName=='{userName}')].userId"
+        }
+    }
+    
     return locals()
 
 @Api.json
@@ -76,12 +88,13 @@ def mod_user(**kwargs):
 
 @Api.urlencoded
 @allure.step("查看用户")
-def lst_user(**kwargs):
+def lst_user(userName="", pageNum=1, pageSize=10, **kwargs):
     req_url = "/dev-api/system/user/list"
     req_method = "GET"
     req_params = {
         "pageNum": 1,
-        "pageSize": 10
+        "pageSize": 10,
+        "userName": ""
     }
     rsp_field = {
         "msg": {"jsonpath": "$.msg"}

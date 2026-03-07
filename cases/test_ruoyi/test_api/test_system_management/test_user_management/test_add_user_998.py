@@ -1,5 +1,7 @@
 # coding=utf8
 from common.ruoyi_logic import *
+import time
+import random
 
 
 class TestAddUser998:
@@ -7,6 +9,11 @@ class TestAddUser998:
         pass
 
     def test_add_user_998(self):
+        # 生成唯一用户名，避免重复
+        timestamp = int(time.time())
+        random_suffix = random.randint(1000, 9999)
+        var_name = f"testuser_{timestamp}_{random_suffix}"
+        
         reg = register({
             "user_id": None,
             "user_id2": None,
@@ -14,9 +21,10 @@ class TestAddUser998:
         self.reg = reg
 
         # 添加用户
-        var_name = "hello22"
         add_user(
-            userName=var_name, nickName=var_name, password=var_name,
+            userName=var_name, 
+            nickName=var_name, 
+            password=var_name,
             check=[
                 ["$.msg", "eq", "操作成功"],
                 ["$.code", "==", 200],
@@ -33,17 +41,17 @@ class TestAddUser998:
             check=[f"$.rows[?(@.userName=='{var_name}')].nickName", "eq", var_name]
         )
 
-        print("config==>", config.user.autotest)
-
+        print("reg.user_id", reg.user_id)
 
     def teardown_method(self):
-        # 删除用户
-        rmv_user(
-            userId=self.reg.user_id,
-            check=[
-                ["$.msg", "eq", "操作成功"],
-                ["$.code", "==", 200],
-            ],
-        )
-
-        pass
+        # 删除用户 - 只有在成功获取到用户ID时才执行
+        if self.reg.user_id:
+            rmv_user(
+                userId=self.reg.user_id,
+                check=[
+                    ["$.msg", "eq", "操作成功"],
+                    ["$.code", "==", 200],
+                ],
+            )
+        else:
+            print("teardown: 未获取到用户ID，跳过删除")

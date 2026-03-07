@@ -1,6 +1,7 @@
 import copy
 import json
 import time
+import os
 import allure
 import pytest_check
 from .base_api import BaseApi
@@ -11,6 +12,7 @@ from core.ruoyi_error import RuoyiError
 from .complex_api import ComplexApi
 from easydict import EasyDict as register
 from core.context import *
+from core.init import FILES_PATH
 
 logger = LoggerManager().get_logger("main")
 
@@ -290,6 +292,13 @@ class Api:
         req_field = step_context.req_field
         req_params = step_context.req_params
         kwargs = step_context.unprocessed_kwargs
+        api_func = step_context.func
+
+        # 检查那些入参被引用, 如果被引用, 则从kwargs中移除
+        ref_key_list = self.check_parameter_usage(api_func)  # TODO 后续可以考虑将这个信息, 加入缓存, 这里可能会引入性能问题
+        for key in ref_key_list:  # 这里分析出来的ref_key, 是看函数定义中的入参, 有无被函数引用.
+            if key in kwargs.keys():  # 这里删除的时候, 实际是要对 函数调用时 传入的kwargs来去删除, 而不是对函数定义时候的 形参去删除
+                del kwargs[key]
 
         logger.debug(f"做入参填充时接口类型是 {api_type}")
         if api_type == "json":
@@ -300,15 +309,17 @@ class Api:
                 req_json, kwargs = RequestData().modify_by_field_define(req_json, **kwargs)
                 step_context.req_json = req_json
 
-            if auto_fill is not False:  # 为False的时候, 不做填充
-                req_json = RequestData().modify_req_body(req_json, **kwargs)
-                step_context.req_json = req_json  # 将信息更新回上下文中
-                logger.info(func.__name__ + "  步骤::json类型请求体::" + json.dumps(req_json))
+            # 默认去做填充, 因为已经通过判断那些参数被引用并移除了, 所以, 剩下的都是可以去填充的了
+            req_json = RequestData().modify_req_body(req_json, **kwargs)
+            step_context.req_json = req_json  # 将信息更新回上下文中
+            logger.info(func.__name__ + "  步骤::json类型请求体::" + json.dumps(req_json))
+
         elif api_type == "urlencoded":
-            if auto_fill is not False:  # 为False的时候, 不做填充
-                req_params = RequestData().modify_req_body(req_params, **kwargs)
-                step_context.req_params = req_params  # 将信息更新回上下文中
-                logger.info(func.__name__ + "  urlencoded类型请求体::" + json.dumps(req_params))
+            # 默认去做填充, 因为已经通过判断那些参数被引用并移除了, 所以, 剩下的都是可以去填充的了
+            req_params = RequestData().modify_req_body(req_params, **kwargs)
+            step_context.req_params = req_params  # 将信息更新回上下文中
+            logger.info(func.__name__ + "  urlencoded类型请求体::" + json.dumps(req_params))
+
         elif api_type == "form_data":
             logger.debug("当前是form_data请求, 不做入参填充, 因为不存在入参填充的场景")
         else:
@@ -477,6 +488,40 @@ class Api:
             return True
         else:
             return False
+
+    def check_parameter_usage(self, func):
+        """检查函数入参是否被 req_url / req_json / req_params / req_data 引用"""
+        import inspect
+        import ast
+
+        _TARGET_VARS = {"req_url", "req_json", "req_params", "req_data"}
+
+        ref_key_list = []
+
+        source = inspect.getsource(func)
+        tree = ast.parse(source)
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == func.__name__:
+                param_names = {arg.arg for arg in node.args.args}
+
+                # 收集目标变量赋值语句右侧引用的所有 Name
+                referenced = set()
+                for stmt in ast.walk(node):
+                    if isinstance(stmt, ast.Assign):
+                        # 只关心赋值目标是 req_url / req_json / req_params / req_data
+                        for target in stmt.targets:
+                            if isinstance(target, ast.Name) and target.id in _TARGET_VARS:
+                                for sub in ast.walk(stmt.value):
+                                    if isinstance(sub, ast.Name):
+                                        referenced.add(sub.id)
+
+                for param in param_names:
+                    if param in referenced:
+                        ref_key_list.append(param)
+                break
+
+        return ref_key_list
 
     def do_service_fetch(self):
         step_context = StepContext()

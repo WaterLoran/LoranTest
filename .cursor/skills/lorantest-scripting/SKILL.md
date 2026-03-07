@@ -864,39 +864,77 @@ class TestXxx(object):
 
 ## 12. 文件位置与目录结构
 
+### 12.1 项目根目录
+
+```
+LoranTest/
+├── cases/          # 测试脚本（按项目/测试类型/业务模块组织）
+├── common/         # Logic 函数封装（按业务模块组织）
+├── config/         # 配置文件（environment.yaml, database.yaml, user.yaml）
+├── core/           # 框架核心（logic引擎、工具、钩子）
+├── pages/          # Page Object（Web UI 自动化）
+├── files/          # 测试用静态文件
+├── logs/           # 测试运行日志
+├── utils/          # 通用工具
+├── docs/           # 文档
+├── requirements.txt
+├── run_api_case.py # pytest 入口脚本
+└── readme.md
+```
+
+### 12.2 测试脚本目录（cases/）
+
 ```
 cases/
-├── design_end/               # 设计端测试
-│   ├── process/              # 流程相关
-│   │   ├── architecture/     # 架构操作
-│   │   │   └── new/
-│   │   │       └── test_add_process_architecture_001.py
-│   │   └── ...
-│   ├── batch_file_upload/    # 批量上传
-│   ├── convert_to_process/   # 转换为流程
-│   └── lock_function_new/    # 锁定功能
-├── browser_end/              # 浏览端测试
-├── regression/               # 回归测试
-│   ├── smoke/                # 冒烟测试（核心路径）
-│   │   ├── process_system/
-│   │   └── institution/
-│   ├── general/              # 通用回归
-│   │   ├── back_stage_management/
-│   │   └── browser_end/
-│   └── bug/                  # Bug 修复验证
-│       ├── 202404/
-│       └── 202405/
-├── precondition/             # 前置条件脚本
-├── project/                  # 项目级脚本（准备/清理数据）
-├── example/                  # 示例脚本
-└── unfiled_script/           # 未归类脚本
+└── test_ruoyi/                                         # 项目名
+    ├── test_api/                                       # API 测试
+    │   └── test_system_management/                     # 一级业务模块
+    │       ├── test_dept_management/                   # 二级业务模块：部门管理
+    │       │   ├── test_dept_basic_crud.py
+    │       │   ├── test_dept_boundary.py
+    │       │   ├── test_dept_validation.py
+    │       │   └── ...
+    │       ├── test_dict_management/                   # 二级业务模块：字典管理
+    │       ├── test_post_management/                   # 二级业务模块：岗位管理
+    │       ├── test_role_management/                   # 二级业务模块：角色管理
+    │       └── test_user_management/                   # 二级业务模块：用户管理
+    ├── test_example/                                   # 框架用法示例
+    │   ├── test_api_with_restore_example_001.py
+    │   └── ...
+    ├── test_utils/                                     # 测试辅助工具
+    │   └── test_data_generator.py
+    └── test_web_ui/                                    # Web UI 测试
+        ├── test_common/
+        │   └── test_login_ruoyi.py
+        ├── test_add_user_ui.py
+        └── ...
 ```
 
-**组织原则**：
+### 12.3 cases 与 common 的对应关系
 
-- 按业务端（design_end / browser_end / regression）分顶层目录
-- regression 下按测试类型分（smoke / general / bug）
+cases和common的目录没有直接对应的关系, 因为不同的脚本中有可能会由不同的模块的logic来组成
+
+### 12.4 脚本组织原则
+
 - 具体目录按业务模块层级组织
+- 每一个业务模块所对应的目录命名都需要以 `test_` 开头，这样可以方便在任意一级目录执行 `pytest` 来运行下面的所有脚本
+- `cases/` 目录下不需要 `__init__.py`（pytest 自动发现机制）
+- `common/` 目录下每个包都需要 `__init__.py`（Python 包导入机制）
+- 测试脚本文件一律以 `test_` 开头（pytest 发现规则）
+- 同一个业务模块下，按测试维度拆分为多个文件（如 `test_dept_basic_crud.py`、`test_dept_boundary.py`、`test_dept_validation.py` 等）
+
+### 12.5 测试脚本文件命名
+
+格式：`test_{模块缩写}_{测试维度}.py`
+
+```
+test_dept_basic_crud.py          # 部门-基础增删改查
+test_dept_boundary.py            # 部门-边界条件
+test_dept_field_validation.py    # 部门-字段校验
+test_role_admin_protection.py    # 角色-管理员保护
+test_role_data_scope.py          # 角色-数据权限范围
+test_post_pagination.py          # 岗位-分页
+```
 
 ---
 

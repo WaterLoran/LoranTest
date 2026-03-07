@@ -34,8 +34,14 @@ class BaseApi:
         self.env_info_init()
 
     def env_info_init(self):
-
+        from easydict import EasyDict
+        
         config = ServiceContext().config
+        
+        # Handle both dict and EasyDict cases
+        if isinstance(config, dict):
+            config = EasyDict(config)
+        
         self.base_url = config.env.main.domain
         self.username = config.env.main.username
         self.password = config.env.main.password
