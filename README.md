@@ -381,6 +381,7 @@ LoranTest 是一款由 **前华为测试开发工程师** 设计的 **Python 自
    source .venv/bin/activate  # Windows 使用 .venv\Scripts\activate
    pip install -r requirements.txt
    ```
+   python版本是3.9.6
 
 2. **启动若依示例系统（Docker 一键部署）**
 
